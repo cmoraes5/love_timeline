@@ -1,11 +1,232 @@
-"use client"
+"use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Heart, Calendar, MapPin } from "lucide-react";
+import {
+  Heart,
+  Calendar,
+  MapPin,
+  Play,
+  X,
+  Pause,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+
+// Interface para a API do YouTube
+interface YouTubePlayer {
+  playVideo: () => void;
+  pauseVideo: () => void;
+  stopVideo: () => void;
+  mute: () => void;
+  unMute: () => void;
+  isMuted: () => boolean;
+  getPlayerState: () => number;
+  addEventListener: (event: string, listener: () => void) => void;
+}
+
+declare global {
+  interface Window {
+    YT: {
+      Player: new (
+        elementId: string,
+        options: {
+          videoId: string;
+          playerVars?: {
+            autoplay?: 0 | 1;
+            controls?: 0 | 1;
+            rel?: 0 | 1;
+            showinfo?: 0 | 1;
+            mute?: 0 | 1;
+            modestbranding?: 0 | 1;
+            loop?: 0 | 1;
+            playlist?: string;
+          };
+          events?: {
+            onReady?: (event: { target: YouTubePlayer }) => void;
+            onStateChange?: (event: { data: number }) => void;
+          };
+        }
+      ) => YouTubePlayer;
+    };
+    onYouTubeIframeAPIReady: () => void;
+  }
+}
 
 export default function Home() {
+  const [visibleItems, setVisibleItems] = useState<number[]>([]);
+  const [timelineProgress, setTimelineProgress] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(false);
+  const [hasInteracted, setHasInteracted] = useState(false);
+  const [playerReady, setPlayerReady] = useState(false);
+
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const playerRef = useRef<YouTubePlayer | null>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // ID do vídeo do YouTube (substitua pelo ID do vídeo romântico desejado)
+  const videoId = "e-fA-gBCkj0"; // Exemplo: "dQw4w9WgXcQ"
+
+  // Função para carregar a API do YouTube
+  const loadYouTubeAPI = useCallback(() => {
+    if (!window.YT) {
+      const tag = document.createElement("script");
+      tag.src = "https://www.youtube.com/iframe_api";
+      const firstScriptTag = document.getElementsByTagName("script")[0];
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+
+      window.onYouTubeIframeAPIReady = initializeYouTubePlayer;
+    } else {
+      initializeYouTubePlayer();
+    }
+  }, []);
+
+  // Inicializar o player do YouTube (invisível)
+  const initializeYouTubePlayer = useCallback(() => {
+    playerRef.current = new window.YT.Player("youtube-player", {
+      videoId: videoId,
+      playerVars: {
+        autoplay: 0,
+        controls: 0,
+        rel: 0,
+        showinfo: 0,
+        mute: 0,
+        modestbranding: 1,
+        loop: 1,
+        playlist: videoId, // Necessário para loop
+      },
+      events: {
+        onReady: (event) => {
+          playerRef.current = event.target;
+          setPlayerReady(true);
+        },
+        onStateChange: (event) => {
+          setIsPlaying(event.data === 1); // 1 = playing
+        },
+      },
+    });
+  }, [videoId]);
+
+  // Controles do áudio
+  const togglePlay = useCallback(() => {
+    if (!hasInteracted) {
+      setHasInteracted(true);
+    }
+
+    if (!playerReady || !playerRef.current) {
+      return;
+    }
+
+    if (isPlaying) {
+      playerRef.current.pauseVideo();
+      setIsPlaying(false);
+    } else {
+      playerRef.current.playVideo();
+      setIsPlaying(true);
+    }
+  }, [isPlaying, hasInteracted, playerReady]);
+
+  const toggleMute = useCallback(() => {
+    if (!playerRef.current) return;
+
+    if (isMuted) {
+      playerRef.current.unMute();
+      setIsMuted(false);
+    } else {
+      playerRef.current.mute();
+      setIsMuted(true);
+    }
+  }, [isMuted]);
+
+  // Carregar a API do YouTube quando o componente montar
+  useEffect(() => {
+    loadYouTubeAPI();
+
+    return () => {
+      // Limpar o player quando o componente desmontar
+      if (playerRef.current) {
+        playerRef.current.stopVideo();
+      }
+    };
+  }, [loadYouTubeAPI]);
+
+  // Auto-play quando usuário interage pela primeira vez
+  useEffect(() => {
+    if (hasInteracted && playerReady && playerRef.current && !isPlaying) {
+      playerRef.current.playVideo();
+    }
+  }, [hasInteracted, playerReady, isPlaying]);
+
+  useEffect(() => {
+    // Intersection Observer para animar cards quando entram na viewport
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const index = Number.parseInt(
+              entry.target.getAttribute("data-index") || "0"
+            );
+            setVisibleItems((prev) => [...prev, index]);
+          }
+        });
+      },
+      { threshold: 0.3 }
+    );
+
+    // Scroll listener para progresso da timeline
+    const handleScroll = () => {
+      if (timelineRef.current) {
+        const rect = timelineRef.current.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        const scrollPosition = window.scrollY;
+        const timelineStart = rect.top + scrollPosition;
+        const timelineHeight = timelineRef.current.offsetHeight;
+
+        // Calcula o progresso baseado na posição do scroll em relação à timeline
+        const scrolledInTimeline =
+          scrollPosition - timelineStart + windowHeight;
+        const progress = Math.min(
+          100,
+          Math.max(0, (scrolledInTimeline / timelineHeight) * 100)
+        );
+
+        setTimelineProgress(progress);
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    handleScroll(); // Chamada inicial
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      if (observerRef.current) {
+        observerRef.current.disconnect();
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    // Observe timeline items
+    const timelineItems = document.querySelectorAll("[data-timeline-item]");
+    timelineItems.forEach((item) => {
+      if (observerRef.current) {
+        observerRef.current.observe(item);
+      }
+    });
+
+    return () => {
+      if (observerRef.current) {
+        timelineItems.forEach((item) => {
+          observerRef.current?.unobserve(item);
+        });
+      }
+    };
+  }, []);
+
   const timelineEvents = [
     {
       date: "26 de Julho, 2019",
@@ -163,61 +384,106 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-red-50">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-rose-50 to-red-50 relative">
+      {/* Player do YouTube invisível */}
+      <div className="fixed -top-96 -left-96 w-1 h-1 opacity-0 pointer-events-none">
+        <div id="youtube-player"></div>
+      </div>
+
+      {/* Controles de Música */}
+      {!isPlaying ? (
+        <div className="fixed top-6 right-6 z-50 flex gap-2">
+          <Button
+            onClick={togglePlay}
+            size="sm"
+            variant="outline"
+            className="bg-white/90 backdrop-blur-sm hover:bg-white shadow-lg border-pink-200 hover:border-pink-300 transition-all duration-300 music-control"
+            disabled={!playerReady}
+          >
+            <Play className="w-4 h-4 text-pink-600" />
+          </Button>
+        </div>
+      ) : (
+        null
+      )}
       {/* Header */}
-      <div className="text-center py-12 px-4">
+      <div className="text-center py-12 px-4 animate-fade-in">
         <div className="flex justify-center items-center gap-2 mb-4">
-          <Heart className="w-8 h-8 text-red-500 fill-current" />
-          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-pink-600 to-red-600 bg-clip-text text-transparent">
+          <Heart
+            className="w-8 h-8 text-red-500 fill-current animate-bounce"
+            style={{ animationDelay: "0s" }}
+          />
+          <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-pink-600 to-red-600 bg-clip-text text-transparent animate-fade-in-up">
             Nossa História de Amor
           </h1>
-          <Heart className="w-8 h-8 text-red-500 fill-current" />
+          <Heart
+            className="w-8 h-8 text-red-500 fill-current animate-bounce"
+            style={{ animationDelay: "0.5s" }}
+          />
         </div>
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+        <p
+          className="text-lg text-gray-600 max-w-2xl mx-auto animate-fade-in-up"
+          style={{ animationDelay: "0.3s" }}
+        >
           Cada momento ao seu lado é uma página especial na nossa história. Aqui
           estão os capítulos mais importantes da nossa jornada juntos.
         </p>
       </div>
 
       {/* Timeline */}
-      <div className="max-w-4xl mx-auto px-4 pb-12">
+      <div className="max-w-4xl mx-auto px-4 pb-12" ref={timelineRef}>
         <div className="relative">
-          {/* Timeline Line */}
-          <div className="absolute left-8 md:left-1/2 transform md:-translate-x-px h-full w-0.5 bg-gradient-to-b from-pink-300 via-red-300 to-rose-300"></div>
+          {/* Timeline Line with Progress */}
+          <div className="absolute left-8 md:left-1/2 transform md:-translate-x-px h-full w-0.5 bg-gray-200"></div>
+          <div
+            className="absolute left-8 md:left-1/2 transform md:-translate-x-px w-0.5 bg-gradient-to-b from-pink-300 via-red-300 to-rose-300 transition-all duration-1000 ease-out"
+            style={{ height: `${timelineProgress}%` }}
+          ></div>
 
           {timelineEvents.map((event, index) => (
             <div
               key={index}
-              className={`relative flex items-center mb-12 ${
-                index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"
-              }`}
+              data-timeline-item
+              data-index={index}
+              className={`relative flex items-center mb-12 transition-all duration-700 ease-out ${
+                visibleItems.includes(index)
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-8"
+              } ${index % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"}`}
+              style={{ transitionDelay: `${index * 100}ms` }}
             >
-              {/* Timeline Dot */}
+              {/* Timeline Dot with Pulse Animation */}
               <div
                 className={`absolute left-8 md:left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full ${getTypeColor(
                   event.type
-                )} border-4 border-white shadow-lg z-10`}
+                )} border-4 border-white shadow-lg z-10 transition-all duration-500 ${
+                  visibleItems.includes(index)
+                    ? "scale-100 animate-pulse"
+                    : "scale-0"
+                }`}
+                style={{ transitionDelay: `${index * 150}ms` }}
               ></div>
 
-              {/* Content Card */}
+              {/* Content Card with Hover Effects */}
               <div
                 className={`ml-16 md:ml-0 md:w-1/2 ${
                   index % 2 === 0 ? "md:pr-8" : "md:pl-8"
                 }`}
               >
-                <Card className="overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 border-0 bg-white/80 backdrop-blur-sm">
-                  <div className="relative">
+                <Card className="overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 ease-out border-0 bg-white/80 backdrop-blur-sm hover:scale-105 hover:-translate-y-2 group">
+                  <div className="relative overflow-hidden">
                     <Image
                       src={event.image || "/placeholder.svg"}
                       alt={event.title}
                       width={400}
                       height={300}
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                     />
-                    <div className="absolute top-4 left-4">
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                    <div className="absolute top-4 left-4 transform transition-all duration-300 group-hover:scale-110">
                       <Badge
                         variant="secondary"
-                        className="bg-white/90 text-gray-700"
+                        className="bg-white/90 text-gray-700 shadow-lg"
                       >
                         {getTypeBadge(event.type)}
                       </Badge>
@@ -225,21 +491,21 @@ export default function Home() {
                   </div>
 
                   <CardContent className="p-6">
-                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-2">
-                      <Calendar className="w-4 h-4" />
+                    <div className="flex items-center gap-2 text-sm text-gray-500 mb-2 transform transition-all duration-300 group-hover:text-gray-700">
+                      <Calendar className="w-4 h-4 transition-transform duration-300 group-hover:scale-110" />
                       <span>{event.date}</span>
                     </div>
 
-                    <h3 className="text-xl font-bold text-gray-800 mb-3">
+                    <h3 className="text-xl font-bold text-gray-800 mb-3 transition-colors duration-300 group-hover:text-red-600">
                       {event.title}
                     </h3>
 
-                    <p className="text-gray-600 mb-4 leading-relaxed">
+                    <p className="text-gray-600 mb-4 leading-relaxed transition-colors duration-300 group-hover:text-gray-700">
                       {event.description}
                     </p>
 
-                    <div className="flex items-center gap-2 text-sm text-gray-500">
-                      <MapPin className="w-4 h-4" />
+                    <div className="flex items-center gap-2 text-sm text-gray-500 transition-all duration-300 group-hover:text-gray-700">
+                      <MapPin className="w-4 h-4 transition-transform duration-300 group-hover:scale-110" />
                       <span>{event.location}</span>
                     </div>
                   </CardContent>
@@ -253,19 +519,33 @@ export default function Home() {
       {/* Footer Message */}
       <div className="text-center py-12 px-4 bg-gradient-to-r from-pink-100 to-red-100">
         <div className="max-w-2xl mx-auto">
-          <Heart className="w-12 h-12 text-red-500 fill-current mx-auto mb-4" />
-          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4">
+          <Heart className="w-12 h-12 text-red-500 fill-current mx-auto mb-4 animate-pulse" />
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-4 animate-fade-in-up">
             E nossa história só ta no começo...
           </h2>
-          <p className="text-lg text-gray-600 mb-6">
+          <p
+            className="text-lg text-gray-600 mb-6 animate-fade-in-up"
+            style={{ animationDelay: "0.2s" }}
+          >
             Cada dia é uma nova oportunidade de criar memórias especiais juntos.
-            Obrigada Ana Carolynda meu amor, por fazer parte da minha vida e por todos os momentos
-            incríveis que ainda estão por vir.
+            Obrigada Ana Carolynda meu amor, por fazer parte da minha vida e por
+            todos os momentos incríveis que ainda estão por vir.
           </p>
-          <div className="flex justify-center items-center gap-2 text-red-500">
-            <Heart className="w-6 h-6 fill-current" />
-            <span className="text-xl font-semibold">Com todo meu amor</span>
-            <Heart className="w-6 h-6 fill-current" />
+          <div
+            className="flex justify-center items-center gap-2 text-red-500 animate-fade-in-up"
+            style={{ animationDelay: "0.4s" }}
+          >
+            <Heart
+              className="w-6 h-6 fill-current animate-pulse"
+              style={{ animationDelay: "0s" }}
+            />
+            <span className="text-xl font-semibold">
+              Com todo meu amor, Doido
+            </span>
+            <Heart
+              className="w-6 h-6 fill-current animate-pulse"
+              style={{ animationDelay: "1s" }}
+            />
           </div>
         </div>
       </div>
