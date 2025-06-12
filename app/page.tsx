@@ -244,7 +244,7 @@ export default function Home() {
         "Ainda nervosos mas bem mais relaxados do que antes, a gente ja conversou muito e da pra ver que as coisas mudaram muito desses dias pra cá, nossos rostinhos, nossos amigos. Sou muito feliz de ter crescido com você.",
       location: "XV da Luiza",
       image: "/02.jpeg",
-      type: "special",
+      type: "memory",
     },
     {
       date: "26 de Outubro, 2019",
@@ -289,16 +289,16 @@ export default function Home() {
         "Foi a primeira vez que a gente se viu pós-quarentena, foram cerca de 3 meses se não me engano. Tava maluco ja pra te ver e lembro que fizemos tiktok, pintamos a cara, brincamos, vimos serie ou filme e nos beijamos muito muito muito.",
       location: "Rua Valério 118, Cascadura",
       image: "/09.jpeg",
-      type: "milestone",
+      type: "special",
     },
     {
       date: "Não lembro a data...",
       title: "Sobre A Minha Melhor Amiga",
       description:
         "Minha melhor amiga AMA comer e comer besteira mas odeia peixe e tudo que for do mar, ela não só sabe como ama me fazer rir, é dona do melhor abraço, do melhor beijo e dos melhores conselhos. Ela é gentil e carinhosa, é temente a Deus e ama muito ele. Ela é minha parceira, confidente, escudeira. Ela é demais pra mim...mas mesmo assim eu a amo. Obrigado por me fazer tão bem!",
-      location: "Nosso Primeiro Lar",
+      location: "Meu Lar",
       image: "/10.jpeg",
-      type: "milestone",
+      type: "special",
     },
     {
       date: "Não lembro a data dessa tbm...",
@@ -307,16 +307,16 @@ export default function Home() {
         "A data da foto não importa, coloquei aqui pra dizer que te acho a garota mais linda do universo, toda vez que olho pra você me pego admirado pela sua beleza...que sorte a minha :)",
       location: "Meu Lar",
       image: "/11.jpeg",
-      type: "milestone",
+      type: "special",
     },
     {
       date: "27 de Novembro, 2024",
       title: "A Vida Com Você",
       description:
-        "Como dar pra ver na foto, não consigo ficar com você, viver com você sem um sorriso no rosto, você é meu carregador de bateria social, namorar a melhor amiga é algo que nem sempre as pessoas conseguem, mas descobrir alguém tão extraordinário e tão linda que te xingou de graça na igreja. Eu diria que é praticamente impossivél, mas graças a Dues, não foi pra mim. Descobrir sua amizade enquanto te conhecia e te curtia, foi muito especial. Foi descobrir algo que eu queria tanto mas tanto e não fazia a menor ideia...",
+        "Como dar pra ver na foto, não consigo ficar com você, viver com você sem um sorriso no rosto, você é meu carregador de bateria social, namorar a melhor amiga é algo que nem sempre as pessoas conseguem, mas descobrir alguém tão extraordinário e tão linda que te xingou de graça na igreja. Eu diria que é praticamente impossivél, mas graças a Deus, não foi pra mim. Descobrir sua amizade enquanto te conhecia e te curtia, foi muito especial. Foi descobrir algo que eu queria tanto mas tanto e não fazia a menor ideia...",
       location: "Cachoeira, Paraty",
       image: "/cachu.jpeg",
-      type: "milestone",
+      type: "memory",
     },
     {
       date: "Outro dia",
@@ -325,7 +325,7 @@ export default function Home() {
         "Essa eu coloquei pra gente lembrar, lembrar de todas as orações, tudo que a gente pediu, sonhou e passou. Oravamos e choravamos por amigos e olha hoje..., choravamos por dinheiro e hoje conseguimos juntar uma grana maneira. Deus não desiste, Deus escuta. Ele é fiel e cumpre oque diz. Ainda conquistaremos muita coisa juntos, confia.",
       location: "Casa do Tala, Sulacap",
       image: "/amigos.jpeg",
-      type: "milestone",
+      type: "god",
     },
     {
       date: "5 de Maio, 2025",
@@ -334,16 +334,16 @@ export default function Home() {
         "Obrigado pela parceria, pela cumplicidade. Obrigado por levantar minha moral e meu bom humor, muito obrigado por ficar e se esforçar por mim, sei que não sou fácil, se relacionar não fácil...mas você faz tudo valer a pena, que sorte a minha ter você.",
       location: "Aniversário do Caio, Casa dele",
       image: "/12.jpeg",
-      type: "milestone",
+      type: "memory",
     },
     {
       date: "31 de Julho, 2024",
-      title: "Mudamos Juntos",
+      title: "TE AMO PRA SEMPRE",
       description:
         "O futuro ao seu lado fica cada dia mais claro, mais promissor e brilhante. Feliz dia dos namorados! Você é tudo que eu pedi pra Deus e também oque eu nem pedi, obrigado por me fazer tão bem meu amor. TE AMO PRA SEMPRE 💘",
       location: "Nossa Futura Casa, Copacabana",
       image: "/ultima.jpeg",
-      type: "milestone",
+      type: "momento",
     },
   ];
 
@@ -378,6 +378,8 @@ export default function Home() {
         return "Aniversário";
       case "memory":
         return "Memória";
+      case "god":
+        return "Deus";
       default:
         return "Momento";
     }
